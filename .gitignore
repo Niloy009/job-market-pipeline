@@ -1,0 +1,11 @@
+.vscode/
+.DS_Store
+.env
+job-market/
+__pycache__/
+*.pyc
+data/
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+.terraform.lock.hcl
