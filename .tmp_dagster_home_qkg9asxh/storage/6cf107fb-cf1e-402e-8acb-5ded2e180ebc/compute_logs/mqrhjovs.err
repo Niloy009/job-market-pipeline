@@ -1,9 +1,0 @@
-2026-04-22 00:40:51,226 — INFO — Context impl SQLiteImpl.
-2026-04-22 00:40:51,227 — INFO — Will assume non-transactional DDL.
-2026-04-22 00:40:51,248 — INFO — Read 250 rows from data/raw_jobs.csv.
-2026-04-22 00:40:51,252 — INFO — After deduplication: 249 rows remaining.
-2026-04-22 00:40:51,303 — INFO — Loading 249 rows into job-market-pipeline-494012.raw_jobs.postings.
-/Users/niloy_saha/projects/job-market-pipeline/job-market/lib/python3.13/site-packages/google/cloud/bigquery/_pandas_helpers.py:486: FutureWarning: Loading pandas DataFrame into BigQuery will require pandas-gbq package version 0.26.1 or greater in the future. Tried to import pandas-gbq and got: No module named 'pandas_gbq'
-  warnings.warn(
-2026-04-22 00:40:54,702 — INFO — Successfully loaded 249 rows into job-market-pipeline-494012.raw_jobs.postings.
-2026-04-22 00:40:54,703 — INFO — bigquery_job_postings asset completed. Loaded 249 rows.

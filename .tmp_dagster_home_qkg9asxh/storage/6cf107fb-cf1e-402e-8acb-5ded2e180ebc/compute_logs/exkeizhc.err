@@ -1,8 +1,0 @@
-2026-04-22 00:40:49,593 — INFO — Fetched page 1 — 50 jobs retrieved.
-2026-04-22 00:40:49,749 — INFO — Fetched page 2 — 50 jobs retrieved.
-2026-04-22 00:40:49,989 — INFO — Fetched page 3 — 50 jobs retrieved.
-2026-04-22 00:40:50,143 — INFO — Fetched page 4 — 50 jobs retrieved.
-2026-04-22 00:40:50,308 — INFO — Fetched page 5 — 50 jobs retrieved.
-2026-04-22 00:40:50,322 — INFO — Total jobs fetched: 250
-2026-04-22 00:40:50,335 — INFO — Data saved to data/raw_jobs.csv
-2026-04-22 00:40:50,336 — INFO — raw_job_postings asset completed with 250 rows.
