@@ -44,6 +44,7 @@ class PipelineConfig:
     table_id: str
     api_base_url: str
     api_key: str
+    detail_base_url: str
     default_keyword: str
     default_location: str
     output_path: Path
@@ -65,6 +66,7 @@ def _load_config() -> PipelineConfig:
         "BQ_TABLE_ID",
         "API_BASE_URL",
         "API_KEY",
+        "DETAIL_BASE_URL"
     ]
 
     missing = [var for var in required_vars if not os.getenv(var)]
@@ -80,6 +82,7 @@ def _load_config() -> PipelineConfig:
         table_id=os.getenv("BQ_TABLE_ID"),
         api_base_url=os.getenv("API_BASE_URL"),
         api_key=os.getenv("API_KEY"),
+        detail_base_url=os.getenv("DETAIL_BASE_URL"),
         default_keyword=os.getenv("DEFAULT_KEYWORD", "data engineer"),
         default_location=os.getenv("DEFAULT_LOCATION", "Deutschland"),
         output_path=Path(os.getenv("OUTPUT_PATH", "data/raw_jobs.csv")),

@@ -22,11 +22,8 @@ DEFAULT_PAGES = 5
 PAGE_SIZE = 50
 
 
-def fetch_jobs(
-    keyword: str = config.default_keyword,
-    location: str = config.default_location,
-    pages: int = DEFAULT_PAGES,
-) -> pd.DataFrame:
+def fetch_jobs(keyword: str = config.default_keyword, location: str = config.default_location,
+            pages: int = DEFAULT_PAGES) -> pd.DataFrame:
     """Fetch job postings from the Bundesagentur fuer Arbeit API.
 
     Args:
@@ -84,10 +81,7 @@ def fetch_jobs(
     return df
 
 
-def save_to_csv(
-    df: pd.DataFrame,
-    output_path: Path = config.output_path,
-) -> None:
+def save_to_csv(df: pd.DataFrame, output_path: Path = config.output_path) -> None:
     """Save a DataFrame to a CSV file.
 
     Args:

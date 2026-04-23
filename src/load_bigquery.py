@@ -71,9 +71,7 @@ def load_to_bigquery(df: pd.DataFrame) -> None:
     """
     client = bigquery.Client(project=config.project_id)
 
-    full_table_id = (
-        f"{config.project_id}.{config.dataset_id}.{config.table_id}"
-    )
+    full_table_id = f"{config.project_id}.{config.dataset_id}.{config.table_id}"
 
     job_config = bigquery.LoadJobConfig(
         write_disposition="WRITE_TRUNCATE",
