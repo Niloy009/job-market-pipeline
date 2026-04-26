@@ -1,25 +1,16 @@
-"""Shared logging configuration for the job market pipeline.
-
-Import the logger from this module in any other module to ensure
-consistent log formatting across the entire codebase.
-
-Typical usage:
-    from src.logger import get_logger
-    logger = get_logger(__name__)
-"""
+"""Shared logging configuration."""
 
 import logging
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Create and return a configured logger instance.
+    """Return a logger with a standard formatter.
 
     Args:
-        name: The name of the logger, typically __name__
-            from the calling module.
+        name: Logger name, typically ``__name__`` of the calling module.
 
     Returns:
-        A configured Logger instance with a standard formatter.
+        Configured :class:`logging.Logger` instance.
     """
     logging.basicConfig(
         level=logging.INFO,

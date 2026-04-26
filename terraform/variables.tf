@@ -1,4 +1,7 @@
-# Variables for the job market pipeline infrastructure.
+variable "gcp_credentials_path" {
+  description = "Path to the GCP service account JSON key file"
+  type        = string
+}
 
 variable "project_id" {
   description = "GCP project ID"

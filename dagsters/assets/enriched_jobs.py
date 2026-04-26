@@ -1,9 +1,4 @@
-"""Dagster asset for LLM enrichment of job postings.
-
-This module defines the enriched_job_postings asset which reads
-job details from the local CSV, enriches them using a local
-Ollama LLM, and loads the results into BigQuery.
-"""
+"""Dagster asset — LLM enrichment of job postings."""
 
 from dagster import asset, AssetExecutionContext
 
@@ -25,11 +20,8 @@ logger = get_logger(__name__)
 def enriched_job_postings(context: AssetExecutionContext) -> None:
     """Enrich job postings with LLM-extracted skills and load to BigQuery.
 
-    Depends on job_details asset being materialised first.
-
     Args:
-        context: Dagster asset execution context for logging
-            and metadata.
+        context: Dagster execution context for metadata and logging.
     """
     df = fetch_raw_jobs()
     enriched_df = enrich_jobs(df)

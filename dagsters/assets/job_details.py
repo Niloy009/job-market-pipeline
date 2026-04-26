@@ -1,10 +1,4 @@
-"""Dagster asset for fetching full job details.
-
-This module defines the job_details asset which reads reference
-numbers from the raw jobs CSV, fetches full job descriptions
-from the Bundesagentur fuer Arbeit API, and saves the enriched
-CSV locally.
-"""
+"""Dagster asset — fetch full job descriptions from the Bundesagentur API."""
 
 import pandas as pd
 from dagster import asset, AssetExecutionContext
@@ -17,20 +11,21 @@ logger = get_logger(__name__)
 
 @asset(
     group_name="ingestion",
-    description="Fetches full job descriptions using refnr from raw jobs.",
+    description=(
+        "Reads refnr values from BigQuery (Airbyte raw layer), fetches "
+        "full job descriptions from the Bundesagentur API, and saves "
+        "enriched data for downstream LLM processing."
+    ),
     deps=["raw_job_postings"],
 )
 def job_details(context: AssetExecutionContext) -> pd.DataFrame:
-    """Fetch full job details including descriptions for all postings.
-
-    Depends on raw_job_postings asset being materialised first.
+    """Fetch full descriptions for all jobs in the BigQuery raw layer.
 
     Args:
-        context: Dagster asset execution context for logging
-            and metadata.
+        context: Dagster execution context for metadata and logging.
 
     Returns:
-        A DataFrame containing job postings with full descriptions.
+        DataFrame with a ``stellenbeschreibung`` column appended.
     """
     df = fetch_all_job_details()
 
@@ -41,6 +36,7 @@ def job_details(context: AssetExecutionContext) -> pd.DataFrame:
             "num_rows": len(df),
             "rows_with_description": int(filled),
             "rows_without_description": int(len(df) - filled),
+            "source": "BigQuery (Airbyte raw layer)",
         }
     )
 

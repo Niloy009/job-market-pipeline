@@ -1,8 +1,4 @@
-"""Dagster job definition for the job market pipeline.
-
-This module defines the job that combines all ingestion assets
-into a single executable unit.
-"""
+"""Job definition for the full ingestion and enrichment pipeline."""
 
 from dagster import AssetSelection, define_asset_job
 
@@ -11,6 +7,10 @@ job_market_pipeline_job = define_asset_job(  # pylint: disable=assignment-from-n
     name="job_market_pipeline_job",
     selection=(
         AssetSelection.groups("ingestion") |
-        AssetSelection.groups("enrichment")),
-    description="Fetches job postings and loads them into BigQuery."
+        AssetSelection.groups("enrichment")
+    ),
+    description=(
+        "Triggers Airbyte sync, fetches full job descriptions, "
+        "and enriches with LLM-extracted skills into BigQuery."
+    ),
 )

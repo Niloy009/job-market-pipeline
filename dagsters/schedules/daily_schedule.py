@@ -1,8 +1,4 @@
-"""Dagster schedule for the job market pipeline.
-
-This module defines a daily schedule that automatically triggers
-the full ingestion pipeline every day at 8:00 AM UTC.
-"""
+"""Daily schedule — triggers the pipeline at 8 AM UTC."""
 
 from dagster import ScheduleDefinition
 

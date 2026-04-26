@@ -1,5 +1,3 @@
-# Provider configuration for the job market pipeline.
-
 terraform {
   required_providers {
     google = {
@@ -10,6 +8,7 @@ terraform {
 }
 
 provider "google" {
-  project = var.project_id
-  region  = var.region
+  project     = var.project_id
+  region      = var.region
+  credentials = file(var.gcp_credentials_path)
 }

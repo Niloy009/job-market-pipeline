@@ -1,13 +1,4 @@
-"""Enrich job postings with LLM-extracted skills and metadata.
-
-This module reads raw job postings with descriptions from a local
-CSV file, sends each job description to a local Ollama LLM,
-extracts structured skill and role information, and writes the
-enriched data back to a new BigQuery table.
-
-Typical usage:
-    python -m src.enrich_jobs
-"""
+"""Enrich job postings with LLM-extracted skills and load to BigQuery."""
 
 import json
 import time
@@ -22,7 +13,6 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-# --- Constants ---
 OLLAMA_MODEL = "llama3.1:8b"
 ENRICHED_TABLE_ID = "enriched_jobs"
 BATCH_DELAY_SECONDS = 0.5
@@ -46,17 +36,14 @@ Stellenbeschreibung:
 
 
 def extract_skills_from_description(description: str) -> dict:
-    """Extract skills and metadata from a job description using Ollama.
-
-    Sends the job description to a local LLaMA model and parses
-    the structured JSON response.
+    """Send a job description to Ollama and return extracted skills/metadata.
 
     Args:
-        description: Raw job description text in German or English.
+        description: Raw job description text (German or English).
 
     Returns:
-        A dictionary containing extracted skills, seniority level,
-        and role category. Returns default values on failure.
+        Dict with keys ``skills``, ``seniority``, and ``role_category``.
+        Falls back to default values on parse or request failure.
     """
     default = {
         "skills": [],
@@ -82,7 +69,6 @@ def extract_skills_from_description(description: str) -> dict:
 
         raw_text = response["message"]["content"].strip()
 
-        # Strip markdown code fences if present
         if raw_text.startswith("```"):
             raw_text = raw_text.split("```")[1]
             if raw_text.startswith("json"):
@@ -104,13 +90,13 @@ def extract_skills_from_description(description: str) -> dict:
 
 
 def fetch_raw_jobs() -> pd.DataFrame:
-    """Fetch job postings with descriptions from local CSV.
+    """Read the job details CSV produced by the fetch_job_details step.
 
     Returns:
-        A DataFrame containing all rows with descriptions.
+        DataFrame loaded from ``DETAILS_CSV_PATH``.
 
     Raises:
-        FileNotFoundError: If the details CSV does not exist.
+        FileNotFoundError: If the CSV does not exist.
         ValueError: If the CSV is empty.
     """
     if not DETAILS_CSV_PATH.exists():
@@ -129,17 +115,14 @@ def fetch_raw_jobs() -> pd.DataFrame:
 
 
 def enrich_jobs(df: pd.DataFrame) -> pd.DataFrame:
-    """Enrich job postings DataFrame with LLM-extracted metadata.
-
-    Iterates over each row, calls the LLM for skill extraction,
-    and appends the results as new columns.
+    """Run LLM enrichment on each row and append skill/seniority columns.
 
     Args:
-        df: Raw job postings DataFrame with descriptions.
+        df: DataFrame with a ``stellenbeschreibung`` column.
 
     Returns:
-        Enriched DataFrame with extracted_skills, seniority, and
-        role_category columns added.
+        Same DataFrame with ``extracted_skills``, ``seniority``, and
+        ``role_category`` columns added.
     """
     skills_list = []
     seniority_list = []
@@ -171,14 +154,13 @@ def enrich_jobs(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_enriched_jobs_to_bigquery(df: pd.DataFrame) -> None:
-    """Load enriched job postings into a new BigQuery table.
+    """Write enriched DataFrame to the BigQuery enriched_jobs table.
 
     Args:
         df: Enriched DataFrame to upload.
 
     Raises:
-        ValueError: If the DataFrame is empty.
-        google.api_core.exceptions.GoogleAPIError: If the load fails.
+        ValueError: If ``df`` is empty.
     """
     if df.empty:
         raise ValueError("Cannot load empty DataFrame to BigQuery.")
@@ -211,7 +193,6 @@ def load_enriched_jobs_to_bigquery(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    """Main entry point for enriching and loading job postings."""
     df = fetch_raw_jobs()
     enriched_df = enrich_jobs(df)
     load_enriched_jobs_to_bigquery(enriched_df)

@@ -1,12 +1,4 @@
-"""Fetch full job details from the Bundesagentur fuer Arbeit API.
-
-This module reads reference numbers from the raw jobs CSV,
-fetches full job details including descriptions for each posting,
-and saves the enriched data as a new CSV file.
-
-Typical usage:
-    python -m src.fetch_job_details
-"""
+"""Fetch full job descriptions from the Bundesagentur API."""
 
 import base64
 import time
@@ -14,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+from google.cloud import bigquery
 
 from src.config import config
 from src.logger import get_logger
@@ -21,21 +14,56 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-# --- Constants ---
 REQUEST_DELAY_SECONDS = 0.3
 OUTPUT_PATH = Path("data/raw_jobs_with_details.csv")
+AIRBYTE_TABLE = "job_postings"
+
+
+def fetch_refnrs_from_bigquery() -> pd.DataFrame:
+    """Read job postings from the BigQuery table Airbyte synced into.
+
+    Returns:
+        DataFrame containing all columns from the raw postings table.
+
+    Raises:
+        ValueError: If the table is empty or missing the ``refnr`` column.
+    """
+    client = bigquery.Client(project=config.project_id)
+
+    full_table = (
+        f"{config.project_id}.{config.dataset_id}.{AIRBYTE_TABLE}"
+    )
+
+    query = f"SELECT * FROM `{full_table}`"
+
+    logger.info("Reading job postings from BigQuery: %s", full_table)
+
+    df = client.query(query).to_dataframe()
+
+    if df.empty:
+        raise ValueError(
+            f"BigQuery table {full_table} is empty. "
+            "Run the Airbyte sync first."
+        )
+
+    if "refnr" not in df.columns:
+        raise ValueError(
+            f"BigQuery table {full_table} is missing the refnr column."
+        )
+
+    logger.info("Loaded %d rows from BigQuery.", len(df))
+    return df
 
 
 def fetch_job_detail(refnr: str, headers: dict) -> dict:
-    """Fetch full job details for a single job posting.
+    """Fetch full details for a single job posting from the Bundesagentur API.
 
     Args:
-        refnr: The unique job reference number.
+        refnr: Unique job reference number.
         headers: HTTP headers including the API key.
 
     Returns:
-        A dictionary containing the full job detail response,
-        or an empty dict if the request fails.
+        Parsed JSON response dict, or an empty dict on failure.
     """
     try:
         encoded_refnr = base64.b64encode(refnr.encode()).decode()
@@ -62,50 +90,32 @@ def fetch_job_detail(refnr: str, headers: dict) -> dict:
 
 
 def extract_description(detail: dict) -> str:
-    """Extract the job description text from a detail response.
+    """Extract the description text from a job detail response.
 
     Args:
-        detail: Full job detail dictionary from the API.
+        detail: Parsed job detail dict from the API.
 
     Returns:
-        The job description string, or empty string if not found.
+        Description string, or empty string if not present.
     """
     return detail.get("stellenangebotsBeschreibung", "")
 
 
-def fetch_all_job_details(
-    input_path: Path = config.output_path,
-    output_path: Path = OUTPUT_PATH,
-) -> pd.DataFrame:
-    """Fetch full details for all jobs in the raw jobs CSV.
-
-    Reads reference numbers from the raw jobs CSV, fetches
-    the full description for each job, and saves the result
-    as a new CSV with the description column added.
+def fetch_all_job_details(output_path: Path = OUTPUT_PATH) -> pd.DataFrame:
+    """Fetch full descriptions for all jobs in BigQuery and save to CSV.
 
     Args:
-        input_path: Path to the raw jobs CSV file.
-        output_path: Path to save the enriched CSV file.
+        output_path: Destination path for the enriched CSV file.
 
     Returns:
-        A DataFrame with job descriptions added.
+        DataFrame with a ``stellenbeschreibung`` column appended.
 
     Raises:
-        FileNotFoundError: If the input CSV does not exist.
-        ValueError: If the input CSV is empty or missing refnr column.
+        ValueError: If the BigQuery table is empty or missing ``refnr``.
     """
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found: {input_path}")
+    df = fetch_refnrs_from_bigquery()
 
-    df = pd.read_csv(input_path)
-
-    if df.empty:
-        raise ValueError("Input CSV is empty.")
-
-    if "refnr" not in df.columns:
-        raise ValueError("Input CSV missing required column: refnr.")
-
-    logger.info("Fetching details for %d jobs from %s.", len(df), input_path)
+    logger.info("Fetching descriptions for %d jobs.", len(df))
 
     headers = {"X-API-Key": config.api_key}
     descriptions = []
@@ -113,7 +123,9 @@ def fetch_all_job_details(
 
     for idx, row in df.iterrows():
         refnr = row["refnr"]
-        logger.info("Fetching detail %d of %d — refnr: %s.", idx + 1, total, refnr)
+        logger.info(
+            "Fetching detail %d of %d — refnr: %s.", idx + 1, total, refnr
+        )
 
         detail = fetch_job_detail(refnr, headers)
         description = extract_description(detail)
@@ -124,7 +136,9 @@ def fetch_all_job_details(
     df["stellenbeschreibung"] = descriptions
 
     filled = df["stellenbeschreibung"].astype(bool).sum()
-    logger.info("Descriptions fetched: %d of %d jobs had content.", filled, total)
+    logger.info(
+        "Descriptions fetched: %d of %d jobs had content.", filled, total
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
@@ -134,7 +148,6 @@ def fetch_all_job_details(
 
 
 def main() -> None:
-    """Main entry point for fetching full job details."""
     fetch_all_job_details()
 
 

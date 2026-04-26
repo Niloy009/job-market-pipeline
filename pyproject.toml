@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-market-pipeline"
+version = "0.1.0"
+description = "German job market intelligence pipeline using Airbyte, Dagster, BigQuery, and LLM enrichment"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dagsters*", "src*"]
