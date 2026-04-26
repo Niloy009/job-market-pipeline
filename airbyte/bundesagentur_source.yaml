@@ -1,0 +1,130 @@
+# Airbyte Low-Code Connector — Bundesagentur fuer Arbeit Job Search API
+#
+# This is a declarative connector manifest for Airbyte's Low-Code CDK.
+# It tells Airbyte how to paginate through the job listings API and
+# which field contains the records.
+#
+# How to use:
+#   1. In Airbyte UI → Sources → New Source → Custom (Low-Code Connector)
+#   2. Paste the contents of this file into the manifest editor
+#   3. Fill in: api_key, keyword, location when prompted
+#
+# Alternatively, register via the Airbyte API:
+#   POST /api/v1/source_definitions/create_custom
+#   Then POST /api/v1/sources/create with the connection_configuration
+
+version: "0.29.0"
+
+definitions:
+
+  # Which field in the API response contains the list of records
+  records_selector:
+    type: RecordSelector
+    extractor:
+      type: DpathExtractor
+      field_path: ["stellenangebote"]
+
+  # How to call the API
+  requester:
+    type: HttpRequester
+    url_base: "{{ config['api_base_url'] }}"
+    http_method: "GET"
+    authenticator:
+      type: ApiKeyAuthenticator
+      header: "X-API-Key"
+      api_token: "{{ config['api_key'] }}"
+    request_parameters:
+      was: "{{ config['keyword'] }}"
+      wo: "{{ config['location'] }}"
+      size: "10"
+
+  # Page-based pagination: page=1, page=2, ...
+  # Stops when the response returns an empty stellenangebote list
+  paginator:
+    type: DefaultPaginator
+    page_token_option:
+      type: RequestOption
+      field_name: "page"
+      inject_into: "request_parameter"
+    pagination_strategy:
+      type: PageIncrement
+      page_size: 10
+      start_from_page: 1
+    stop_condition:
+      type: ResponseToRecordCountPaginationStopCondition
+
+  retriever:
+    type: SimpleRetriever
+    record_selector:
+      $ref: "#/definitions/records_selector"
+    paginator:
+      $ref: "#/definitions/paginator"
+    requester:
+      $ref: "#/definitions/requester"
+
+streams:
+  - type: DeclarativeStream
+    name: "job_postings"
+    primary_key: "refnr"
+    retriever:
+      $ref: "#/definitions/retriever"
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        type: object
+        properties:
+          refnr:
+            type: ["null", "string"]
+          titel:
+            type: ["null", "string"]
+          beruf:
+            type: ["null", "string"]
+          arbeitgeber:
+            type: ["null", "string"]
+          arbeitsort:
+            type: ["null", "object"]
+          aktuelleVeroeffentlichungsdatum:
+            type: ["null", "string"]
+          modifikationsTimestamp:
+            type: ["null", "string"]
+          eintrittsdatum:
+            type: ["null", "string"]
+          kundennummerHash:
+            type: ["null", "string"]
+          externeUrl:
+            type: ["null", "string"]
+
+check:
+  type: CheckStream
+  stream_names: ["job_postings"]
+
+spec:
+  type: Spec
+  connection_specification:
+    type: object
+    $schema: "http://json-schema.org/draft-07/schema#"
+    required:
+      - api_key
+      - api_base_url
+    additionalProperties: true
+    properties:
+      api_base_url:
+        type: string
+        title: "API Base URL"
+        description: "Base URL for the Bundesagentur job search API"
+        examples: ["https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"]
+      api_key:
+        type: string
+        title: "API Key"
+        description: "API key for the Bundesagentur fuer Arbeit API"
+        airbyte_secret: true
+      keyword:
+        type: string
+        title: "Search Keyword"
+        description: "Job title or skill to search for (e.g. data engineer)"
+        default: "data engineer"
+      location:
+        type: string
+        title: "Location"
+        description: "Geographic location filter (e.g. Deutschland)"
+        default: "Deutschland"
